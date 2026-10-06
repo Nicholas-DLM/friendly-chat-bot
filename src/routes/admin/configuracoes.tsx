@@ -1,0 +1,11 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { FormEvent, useEffect, useState } from "react";
+import { ArrowLeft, Save } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+
+export const Route=createFileRoute("/admin/configuracoes")({component:AdminSettings});
+function AdminSettings(){const navigate=useNavigate();const[id,setId]=useState("");const[name,setName]=useState("");const[whatsapp,setWhatsapp]=useState("");const[msg,setMsg]=useState("");
+ useEffect(()=>{(async()=>{if(!supabase)return;const {data:auth}=await supabase.auth.getSession();if(!auth.session)return navigate({to:"/admin/login"});const {data:admin}=await supabase.from("admins").select("establishment_id").eq("user_id",auth.session.user.id).single();if(!admin)return;setId(admin.establishment_id);const {data}=await supabase.from("establishments").select("name,whatsapp").eq("id",admin.establishment_id).single();if(data){setName(data.name);setWhatsapp(data.whatsapp??"");}})();},[navigate]);
+ async function save(e:FormEvent){e.preventDefault();if(!supabase||!id)return;const {error}=await supabase.from("establishments").update({name,whatsapp:whatsapp.replace(/\\D/g,"")}).eq("id",id);setMsg(error?"Não foi possível salvar.":"Configurações salvas!");}
+ return <main className="min-h-screen bg-[#f8f7f4]"><header className="border-b bg-white"><div className="mx-auto flex max-w-6xl px-4 py-4"><Link to="/admin" className="flex items-center gap-2 font-bold"><ArrowLeft size={17}/>Painel</Link></div></header><section className="mx-auto max-w-2xl px-4 py-8"><h1 className="text-3xl font-black">Configurações</h1><form onSubmit={save} className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5"><label className="block text-sm font-bold">Nome<input value={name} onChange={e=>setName(e.target.value)} className="mt-2 h-12 w-full rounded-xl border px-3"/></label><label className="mt-4 block text-sm font-bold">WhatsApp para pedidos<input value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} placeholder="5521999999999" className="mt-2 h-12 w-full rounded-xl border px-3"/></label><button className="mt-5 flex items-center gap-2 rounded-xl bg-[#171717] px-5 py-3 text-sm font-black text-white"><Save size={17}/>Salvar</button>{msg&&<p className="mt-3 text-sm font-semibold">{msg}</p>}</form></section></main>;
+}
